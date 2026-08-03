@@ -58,6 +58,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         .verify(token);
                 
                 String username = decodedJWT.getSubject();
+                String uuidUser = decodedJWT.getClaim("uuidUser").asString();
                 String role = decodedJWT.getClaim("role").asString();
                 List<String> authorities = decodedJWT.getClaim("authorities").asList(String.class);
 
@@ -67,6 +68,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     
                     {
                         if (username != null) customHeaders.put("X-User-Name", username);
+                        if (uuidUser != null) customHeaders.put("X-User-Uuid", uuidUser);
                         if (role != null) customHeaders.put("X-User-Role", role);
                         if (authorities != null && !authorities.isEmpty()) {
                             customHeaders.put("X-User-Authorities", String.join(",", authorities));
