@@ -1,0 +1,25 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: user-service
+  datasource:
+    # We use the same PostgreSQL instance, but a different logical database!
+    url: jdbc:postgresql://localhost:5433/fsm_user
+    username: fsm_user
+    password: fsm_password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+api:
+  security:
+    token:
+      secret: ${JWT_SECRET:super_secret_key_for_development_environment}
