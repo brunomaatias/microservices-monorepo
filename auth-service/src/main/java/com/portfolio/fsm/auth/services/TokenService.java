@@ -32,6 +32,7 @@ public class TokenService {
             String token = JWT.create()
                     .withIssuer("auth-api")
                     .withSubject(user.getUsername())
+                    .withClaim("uuidUser", user.getUuidUser().toString())
                     .withExpiresAt(genExpirationDate())
                     .sign(algorithm);
             logger.info("Token generated for user: {}", user.getUsername());
@@ -42,12 +43,13 @@ public class TokenService {
         }
     }
 
-    public String generateTokenWithPermissions(String username, List<String> permissions, String roleName) {
+    public String generateTokenWithPermissions(String username, String uuidUser, List<String> permissions, String roleName) {
         try {
             Algorithm algorithm = Algorithm.HMAC256(secret);
             String token = JWT.create()
                     .withIssuer("auth-api")
                     .withSubject(username)
+                    .withClaim("uuidUser", uuidUser)
                     .withClaim("role", roleName)
                     .withClaim("authorities", permissions)
                     .withExpiresAt(genExpirationDate())

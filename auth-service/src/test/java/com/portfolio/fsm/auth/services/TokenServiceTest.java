@@ -65,7 +65,7 @@ class TokenServiceTest {
         String role = "TECHNICIAN";
 
         // Act
-        String token = tokenService.generateTokenWithPermissions(username, permissions, role);
+        String token = tokenService.generateTokenWithPermissions(username, "test-uuid", permissions, role);
         List<String> extractedPermissions = tokenService.extractPermissionsFromToken(token);
         String validatedUsername = tokenService.validateToken(token);
 

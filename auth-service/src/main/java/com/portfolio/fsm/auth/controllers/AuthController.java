@@ -86,7 +86,7 @@ public class AuthController {
 
         String roleName = access.getUser().getRole() != null ? access.getUser().getRole().getName() : "";
         String definitiveToken = tokenService.generateTokenWithPermissions(
-                access.getUser().getUsername(), permissions, roleName);
+                access.getUser().getUsername(), access.getUser().getUuidUser().toString(), permissions, roleName);
 
         User user = access.getUser();
         UserDto userDto = new UserDto(
