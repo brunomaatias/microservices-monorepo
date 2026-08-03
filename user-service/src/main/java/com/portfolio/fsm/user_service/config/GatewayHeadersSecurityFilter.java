@@ -10,6 +10,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import com.portfolio.fsm.user_service.dto.UserPrincipal;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ public class GatewayHeadersSecurityFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String username = request.getHeader("X-User-Name");
+        String uuidUser = request.getHeader("X-User-Uuid");
         String role = request.getHeader("X-User-Role");
         String authoritiesHeader = request.getHeader("X-User-Authorities");
 
@@ -37,8 +39,10 @@ public class GatewayHeadersSecurityFilter extends OncePerRequestFilter {
                 }
             }
 
+            UserPrincipal principal = new UserPrincipal(username, uuidUser);
+
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    username, null, authorities
+                    principal, null, authorities
             );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
