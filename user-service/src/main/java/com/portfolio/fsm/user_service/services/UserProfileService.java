@@ -8,6 +8,9 @@ import com.portfolio.fsm.user_service.repositories.UserProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.portfolio.fsm.user_service.dto.EventDto;
+import com.portfolio.fsm.user_service.events.EventPublisher;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -19,6 +22,9 @@ public class UserProfileService {
     @Autowired
     private UserProfileMapper userProfileMapper;
 
+    @Autowired
+    private EventPublisher eventPublisher;
+
     public UserProfileResponse createProfile(UserProfileRequest request) {
         if (userProfileRepository.findByAuthUuid(request.authUuid()).isPresent()) {
             throw new RuntimeException("Profile already exists for UUID: " + request.authUuid());
@@ -26,6 +32,11 @@ public class UserProfileService {
         
         UserProfile profile = userProfileMapper.toEntity(request);
         UserProfile saved = userProfileRepository.save(profile);
+
+        // Publish event
+        EventDto event = new EventDto("USER_PROFILE_CREATED", saved.getAuthUuid(), Map.of("phone", saved.getPhoneNumber()));
+        eventPublisher.publishEvent(event);
+
         return userProfileMapper.toResponse(saved);
     }
 
@@ -36,6 +47,11 @@ public class UserProfileService {
         userProfileMapper.updateEntityFromRequest(request, profile);
 
         UserProfile saved = userProfileRepository.save(profile);
+
+        // Publish event
+        EventDto event = new EventDto("USER_PROFILE_UPDATED", saved.getAuthUuid(), Map.of("city", saved.getCity()));
+        eventPublisher.publishEvent(event);
+
         return userProfileMapper.toResponse(saved);
     }
 

@@ -1,6 +1,11 @@
 spring:
   application:
     name: auth-service
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
   datasource:
     url: jdbc:postgresql://localhost:5433/fsm_auth
     username: fsm_user

@@ -8,19 +8,19 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.portfolio.fsm.user_service.dto.UserPrincipal;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.bind.annotation.*; 
 import java.util.UUID;
+import java.util.HashMap; 
 
 @RestController
 @RequestMapping("/users/profile")
 public class UserProfileController {
 
-    private final UserProfileService userProfileService;
+    private final UserProfileService userProfileService; 
 
     public UserProfileController(UserProfileService userProfileService) {
-        this.userProfileService = userProfileService;
-    }
+        this.userProfileService = userProfileService; 
+    } 
 
     @PostMapping
     public ResponseEntity<UserProfileResponse> createProfile(

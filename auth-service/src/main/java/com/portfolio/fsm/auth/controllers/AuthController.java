@@ -9,6 +9,8 @@ import com.portfolio.fsm.auth.models.User;
 import com.portfolio.fsm.auth.repositories.AccessRepository;
 import com.portfolio.fsm.auth.repositories.UserRepository;
 import com.portfolio.fsm.auth.services.TokenService;
+import com.portfolio.fsm.auth.dto.EventDto;
+import com.portfolio.fsm.auth.events.EventPublisher;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -38,6 +41,9 @@ public class AuthController {
 
     @Autowired
     private TokenService tokenService;
+
+    @Autowired
+    private EventPublisher eventPublisher;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(@RequestBody @Valid LoginRequest data) {
@@ -67,6 +73,9 @@ public class AuthController {
                     user.getEmail(),
                     user.getRole() != null ? user.getRole().getName() : null
             );
+
+            EventDto event = new EventDto("USER_LOGGED_IN", user.getUuidUser(), Map.of("method", "PASSWORD"));
+            eventPublisher.publishEvent(event);
 
             return ResponseEntity.ok(new LoginResponseDto(token, userDto));
 
@@ -116,6 +125,10 @@ public class AuthController {
                     user.getEmail(),
                     user.getRole() != null ? user.getRole().getName() : null
             );
+            
+            EventDto event = new EventDto("USER_LOGGED_IN", user.getUuidUser(), Map.of("method", "DEVICE_ID", "deviceId", deviceId));
+            eventPublisher.publishEvent(event);
+            
             return ResponseEntity.ok(new LoginResponseDto(token, userDto));
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Device not registered.");
@@ -137,6 +150,10 @@ public class AuthController {
                     user.getEmail(),
                     user.getRole() != null ? user.getRole().getName() : null
             );
+            
+            EventDto event = new EventDto("USER_LOGGED_IN", user.getUuidUser(), Map.of("method", "NFC", "nfcId", nfcId));
+            eventPublisher.publishEvent(event);
+            
             return ResponseEntity.ok(new LoginResponseDto(token, userDto));
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("NFC not registered.");
@@ -158,6 +175,9 @@ public class AuthController {
             }
 
             tokenService.invalidateToken(token);
+
+            EventDto event = new EventDto("USER_LOGGED_OUT", null, Map.of("token", token));
+            eventPublisher.publishEvent(event);
 
             return ResponseEntity.ok("Logout successful.");
         } catch (Exception e) {
