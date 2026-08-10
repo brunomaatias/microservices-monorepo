@@ -16,11 +16,14 @@ import java.util.UUID;
 @RequestMapping("/users/profile")
 public class UserProfileController {
 
-    @Autowired
-    private UserProfileService userProfileService;
+    private final UserProfileService userProfileService;
+
+    public UserProfileController(UserProfileService userProfileService) {
+        this.userProfileService = userProfileService;
+    }
 
     @PostMapping
-    public ResponseEntity<UserProfileResponse> createOrUpdate(
+    public ResponseEntity<UserProfileResponse> createProfile(
             @RequestBody UserProfileRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
         
@@ -37,7 +40,28 @@ public class UserProfileController {
                 request.country()
         );
         
-        return ResponseEntity.ok(userProfileService.createOrUpdateProfile(securedRequest));
+        return ResponseEntity.ok(userProfileService.createProfile(securedRequest));
+    }
+
+    @PutMapping
+    public ResponseEntity<UserProfileResponse> updateProfile(
+            @RequestBody UserProfileRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        
+        UUID tokenUuid = UUID.fromString(principal.uuidUser());
+        
+        UserProfileRequest securedRequest = new UserProfileRequest(
+                tokenUuid,
+                request.firstName(),
+                request.lastName(),
+                request.phoneNumber(),
+                request.avatarUrl(),
+                request.addressLine(),
+                request.city(),
+                request.country()
+        );
+        
+        return ResponseEntity.ok(userProfileService.updateProfile(securedRequest));
     }
 
     @GetMapping("/me")
