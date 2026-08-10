@@ -6,15 +6,10 @@ spring:
     name: api-gateway
   cloud:
     gateway:
-      routes:
-        - id: auth-service
-          uri: lb://AUTH-SERVICE
-          predicates:
-            - Path=/auth/**
-        - id: user-service
-          uri: lb://USER-SERVICE
-          predicates:
-            - Path=/users/** 
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true 
 
 eureka:
   client:
