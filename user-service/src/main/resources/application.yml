@@ -4,15 +4,18 @@ server:
 spring:
   application:
     name: user-service
-  datasource:
-    # We use the same PostgreSQL instance, but a different logical database!
+  datasource: 
     url: jdbc:postgresql://localhost:5433/fsm_user
     username: fsm_user
     password: fsm_password
     driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: "1"
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
@@ -23,3 +26,8 @@ api:
   security:
     token:
       secret: ${JWT_SECRET:super_secret_key_for_development_environment}
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/ 
