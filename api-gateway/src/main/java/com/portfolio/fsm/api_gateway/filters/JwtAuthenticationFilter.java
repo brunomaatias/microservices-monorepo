@@ -3,30 +3,34 @@ package com.portfolio.fsm.api_gateway.filters;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.core.Ordered;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
-import jakarta.servlet.http.HttpServletRequestWrapper;
-import com.auth0.jwt.interfaces.DecodedJWT;
-import java.util.Collections;
-import java.util.Enumeration;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
+
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import java.io.IOException;
-import java.util.List;
-
 @Component
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     @Value("${api.security.token.secret}")
     private String secret;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final List<String> OPEN_ENDPOINTS = List.of(
             "/auth/login",
@@ -35,17 +39,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     );
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
-
-        String path = request.getRequestURI();
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        String path = exchange.getRequest().getURI().getPath();
 
         if (isSecured(path)) {
-            String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+            String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                response.setStatus(HttpStatus.UNAUTHORIZED.value());
-                response.getWriter().write("Missing or Invalid Authorization Header");
-                return;
+                return sendErrorResponse(exchange.getResponse(), "Missing or Invalid Authorization Header");
             }
 
             String token = authHeader.substring(7);
@@ -56,64 +56,55 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         .withIssuer("auth-api")
                         .build()
                         .verify(token);
-                
+
                 String username = decodedJWT.getSubject();
                 String uuidUser = decodedJWT.getClaim("uuidUser").asString();
                 String role = decodedJWT.getClaim("role").asString();
                 List<String> authorities = decodedJWT.getClaim("authorities").asList(String.class);
 
-                // Create a request wrapper to add custom headers for downstream microservices
-                HttpServletRequestWrapper requestWrapper = new HttpServletRequestWrapper(request) {
-                    private final Map<String, String> customHeaders = new HashMap<>();
-                    
-                    {
-                        if (username != null) customHeaders.put("X-User-Name", username);
-                        if (uuidUser != null) customHeaders.put("X-User-Uuid", uuidUser);
-                        if (role != null) customHeaders.put("X-User-Role", role);
-                        if (authorities != null && !authorities.isEmpty()) {
-                            customHeaders.put("X-User-Authorities", String.join(",", authorities));
-                        }
-                    }
+                ServerHttpRequest request = exchange.getRequest().mutate()
+                        .header("X-User-Name", username != null ? username : "")
+                        .header("X-User-Uuid", uuidUser != null ? uuidUser : "")
+                        .header("X-User-Role", role != null ? role : "")
+                        .header("X-User-Authorities", authorities != null ? String.join(",", authorities) : "")
+                        .build();
 
-                    @Override
-                    public String getHeader(String name) {
-                        if (customHeaders.containsKey(name)) {
-                            return customHeaders.get(name);
-                        }
-                        return super.getHeader(name);
-                    }
+                ServerWebExchange mutatedExchange = exchange.mutate().request(request).build();
+                return chain.filter(mutatedExchange);
 
-                    @Override
-                    public Enumeration<String> getHeaders(String name) {
-                        if (customHeaders.containsKey(name)) {
-                            return Collections.enumeration(Collections.singletonList(customHeaders.get(name)));
-                        }
-                        return super.getHeaders(name);
-                    }
-
-                    @Override
-                    public Enumeration<String> getHeaderNames() {
-                        List<String> names = Collections.list(super.getHeaderNames());
-                        names.addAll(customHeaders.keySet());
-                        return Collections.enumeration(names);
-                    }
-                };
-                
-                filterChain.doFilter(requestWrapper, response);
-                return;
-                
             } catch (JWTVerificationException exception) {
-                response.setStatus(HttpStatus.UNAUTHORIZED.value());
-                response.getWriter().write("Invalid or Expired JWT Token");
-                return;
+                return sendErrorResponse(exchange.getResponse(), "Invalid or Expired JWT Token");
             }
         }
 
-        // Token is valid (or endpoint is open), let request proceed
-        filterChain.doFilter(request, response);
+        return chain.filter(exchange);
     }
 
     private boolean isSecured(String path) {
         return OPEN_ENDPOINTS.stream().noneMatch(path::contains);
+    }
+
+    private Mono<Void> sendErrorResponse(ServerHttpResponse response, String message) {
+        response.setStatusCode(HttpStatus.UNAUTHORIZED);
+        response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+
+        Map<String, Object> errorDetails = new HashMap<>();
+        errorDetails.put("timestamp", java.time.LocalDateTime.now().toString());
+        errorDetails.put("status", HttpStatus.UNAUTHORIZED.value());
+        errorDetails.put("error", HttpStatus.UNAUTHORIZED.getReasonPhrase());
+        errorDetails.put("message", message);
+
+        try {
+            byte[] bytes = objectMapper.writeValueAsBytes(errorDetails);
+            DataBuffer buffer = response.bufferFactory().wrap(bytes);
+            return response.writeWith(Mono.just(buffer));
+        } catch (JsonProcessingException e) {
+            return response.setComplete();
+        }
+    }
+
+    @Override
+    public int getOrder() {
+        return -1;
     }
 }
