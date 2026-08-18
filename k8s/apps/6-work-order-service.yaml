@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: work-order-service
+  labels:
+    app: work-order-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: work-order-service
+  template:
+    metadata:
+      labels:
+        app: work-order-service
+    spec:
+      containers:
+        - name: work-order-service
+          image: fsm/work-order-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8085
+          env:
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: "http://eureka-server:8761/eureka/"
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgres-service:5432/fsm_workorder"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "fsm_user"
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: "fsm_password"
+            - name: SPRING_RABBITMQ_HOST
+              value: "rabbitmq-service"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: work-order-service
+spec:
+  selector:
+    app: work-order-service
+  ports:
+    - protocol: TCP
+      port: 8085
+      targetPort: 8085
+  type: ClusterIP
