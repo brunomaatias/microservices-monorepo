@@ -2,6 +2,7 @@ package com.portfolio.fsm.customer.controllers;
 
 import com.portfolio.fsm.customer.dto.CustomerDto;
 import com.portfolio.fsm.customer.services.CustomerService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,7 @@ public class CustomerController {
     private CustomerService customerService;
 
     @PostMapping
-    public ResponseEntity<CustomerDto> createCustomer(@RequestBody CustomerDto request) {
+    public ResponseEntity<CustomerDto> createCustomer(@Valid @RequestBody CustomerDto request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(customerService.createCustomer(request));
     }
 
@@ -33,7 +34,7 @@ public class CustomerController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CustomerDto> updateCustomer(@PathVariable UUID id, @RequestBody CustomerDto request) {
+    public ResponseEntity<CustomerDto> updateCustomer(@PathVariable UUID id, @Valid @RequestBody CustomerDto request) {
         return ResponseEntity.ok(customerService.updateCustomer(id, request));
     }
 }

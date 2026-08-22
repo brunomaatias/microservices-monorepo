@@ -39,13 +39,13 @@ public class CustomerService {
 
     public CustomerDto getCustomerById(UUID id) {
         Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
+                .orElseThrow(() -> new com.portfolio.fsm.customer.exceptions.ResourceNotFoundException("Customer not found"));
         return customerMapper.toResponse(customer);
     }
 
     public CustomerDto updateCustomer(UUID id, CustomerDto request) {
         Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
+                .orElseThrow(() -> new com.portfolio.fsm.customer.exceptions.ResourceNotFoundException("Customer not found"));
 
         customerMapper.updateEntityFromRequest(request, customer);
         Customer updated = customerRepository.save(customer);
