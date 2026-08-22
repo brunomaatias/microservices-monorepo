@@ -48,13 +48,13 @@ public class WorkOrderService {
 
     public WorkOrderDto getWorkOrderById(UUID id) {
         WorkOrder workOrder = workOrderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("WorkOrder not found"));
+                .orElseThrow(() -> new com.portfolio.fsm.workorder.exceptions.ResourceNotFoundException("WorkOrder not found"));
         return workOrderMapper.toResponse(workOrder);
     }
 
     public WorkOrderDto updateWorkOrder(UUID id, WorkOrderDto request) {
         WorkOrder workOrder = workOrderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("WorkOrder not found"));
+                .orElseThrow(() -> new com.portfolio.fsm.workorder.exceptions.ResourceNotFoundException("WorkOrder not found"));
 
         String oldStatus = workOrder.getStatus();
 

@@ -2,6 +2,7 @@ package com.portfolio.fsm.workorder.controllers;
 
 import com.portfolio.fsm.workorder.dto.WorkOrderDto;
 import com.portfolio.fsm.workorder.services.WorkOrderService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,7 @@ public class WorkOrderController {
     private WorkOrderService workOrderService;
 
     @PostMapping
-    public ResponseEntity<WorkOrderDto> createWorkOrder(@RequestBody WorkOrderDto request) {
+    public ResponseEntity<WorkOrderDto> createWorkOrder(@Valid @RequestBody WorkOrderDto request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(workOrderService.createWorkOrder(request));
     }
 
@@ -33,7 +34,7 @@ public class WorkOrderController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<WorkOrderDto> updateWorkOrder(@PathVariable UUID id, @RequestBody WorkOrderDto request) {
+    public ResponseEntity<WorkOrderDto> updateWorkOrder(@PathVariable UUID id, @Valid @RequestBody WorkOrderDto request) {
         return ResponseEntity.ok(workOrderService.updateWorkOrder(id, request));
     }
 }
